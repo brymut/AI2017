@@ -293,6 +293,8 @@ def init_mission(agent_host, port=0, agent_type='Unknown',mission_type='Unknown'
 #-- This class implements the Realistic Agent --#
 class AgentRealistic:
     q_table = {}
+    alpha = 1.0
+    rep = 1
     
     def __init__(self,agent_host,agent_port, mission_type, mission_seed, solution_report, state_space_graph):
         """ Constructor for the realistic agent """
@@ -324,7 +326,7 @@ class AgentRealistic:
         return actual_action   
   
     #----------------------------------------------------------------------------------------------------------------#
-    def updateQTable( self, reward, current_state ):
+    def updateQTable( self, reward, current_state):
         """Change q_table to reflect what we have learnt."""
         gamma = 0.8
         # retrieve the old action value from the Q-table (indexed by the previous state and the previous action)
@@ -338,7 +340,7 @@ class AgentRealistic:
                     l.append(x)
         y = random.randint(0, len(l)-1)
         a = l[y]
-        new_q = reward + gamma * AgentRealistic.q_table[current_state][a]
+        new_q = (1-AgentRealistic.alpha)*old_q + AgentRealistic.alpha*(reward + gamma * AgentRealistic.q_table[current_state][a])
         print("max value is action " + str(a) + " and value " + str(AgentRealistic.q_table[current_state][a]))
         # assign the new action value to the Q-table
         AgentRealistic.q_table[self.prev_s][self.prev_a] = new_q
@@ -355,7 +357,7 @@ class AgentRealistic:
         # assign the new action value to the Q-table
         AgentRealistic.q_table[self.prev_s][self.prev_a] = new_q
 
-    def act(self, world_state, agent_host, current_r ):
+    def act(self, world_state, agent_host, current_r):
         """take 1 action in response to the current world state"""
         
         obs_text = world_state.observations[-1].text
@@ -371,7 +373,7 @@ class AgentRealistic:
 
         # update Q values
         if self.prev_s is not None and self.prev_a is not None:
-            self.updateQTable( current_r, current_s )
+            self.updateQTable( current_r, current_s)
 
         self.drawQ( curr_x = int(obs[u'XPos']), curr_y = int(obs[u'ZPos']) )
 
@@ -412,8 +414,8 @@ class AgentRealistic:
               
     def drawQ( self, curr_x=None, curr_y=None ):
         scale = 40
-        world_x = 12
-        world_y = 12
+        world_x = 40
+        world_y = 40
         if self.canvas is None or self.root is None:
             self.root = tk.Tk()
             self.root.wm_title("Q-table")
@@ -484,7 +486,7 @@ class AgentRealistic:
             if is_first_action:
                 # wait until have received a valid observation
                 while True:
-                    time.sleep(0.1)
+                    #time.sleep(0.02)
                     world_state = agent_host.getWorldState()
                     for error in world_state.errors:
                         #self.logger.error("Error: %s" % error.text)
@@ -503,7 +505,7 @@ class AgentRealistic:
             else:
                 # wait for non-zero reward
                 while world_state.is_mission_running and current_r == 0:
-                    time.sleep(0.1)
+                    #time.sleep(0.02)
                     world_state = agent_host.getWorldState()
                     for error in world_state.errors:
                         #self.logger.error("Error: %s" % error.text)
@@ -514,7 +516,7 @@ class AgentRealistic:
                         self.solution_report.addReward(reward.getValue(), datetime.datetime.now())
                 # allow time to stabilise after action
                 while True:
-                    time.sleep(0.1)
+                    #time.sleep(0.02)
                     world_state = agent_host.getWorldState()
                     for error in world_state.errors:
                         #self.logger.error("Error: %s" % error.text)
@@ -545,7 +547,9 @@ class AgentRealistic:
         print("\n\nSummary:")
         print("Mission has ended ... either because time has passed (-1000 reward) or goal reached (1000 reward) or early stop (0 reward)")
         print("Cumulative reward = " + str(total_reward) )
-
+        print("Alpha: " + str(AgentRealistic.alpha)) 
+        AgentRealistic.alpha = AgentRealistic.alpha - (1.0/args.nrepeats)
+        print("Alpha: " + str(AgentRealistic.alpha))
         return
  
 
@@ -1147,6 +1151,8 @@ if __name__ == "__main__":
         else:
             if args.agentname.lower()=='realistic':
                 AgentRealistic.q_table = {}
+                AgentRealistic.alpha = 1.0
+                AgentRealistic.rep = args.nrepeats
             helper_agent = None
             
         
@@ -1177,6 +1183,7 @@ if __name__ == "__main__":
             print("|\tFinal goal reached = " + str(solution_report.is_goal))    
             print("|\tTimeout = " + str(solution_report.is_timeout))    
             print("---------------------------------------------\n")
+
 
             print('Save the solution report to a specific file for later analysis and reporting...')
             fn_result = args.resultpath + 'solution_' + args.studentguid + '_' + agent_name + '_' +args.missiontype + '_' + str(i_training_seed) + '_' + str(i_rep) 
