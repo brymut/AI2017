@@ -399,7 +399,7 @@ class AgentRealistic:
 
         # try to send the selected action, only update prev_s if this succeeds
         try:
-            self.__ExecuteActionForRealisticAgentWithNoisyTransitionModel__(a, 0.0)
+            self.__ExecuteActionForRealisticAgentWithNoisyTransitionModel__(a, 0.05)
             self.prev_s = current_s
             self.prev_a = a
 
@@ -413,9 +413,15 @@ class AgentRealistic:
         return current_r
               
     def drawQ( self, curr_x=None, curr_y=None ):
+        if args.missiontype == 'small':
+            size = 10
+        elif args.missiontype == 'medium':
+            size = 20
+        else:
+            size = 20
         scale = 40
-        world_x = 40
-        world_y = 40
+        world_x = size
+        world_y = size
         if self.canvas is None or self.root is None:
             self.root = tk.Tk()
             self.root.wm_title("Q-table")
@@ -1066,7 +1072,7 @@ if __name__ == "__main__":
     DEFAULT_STUDENT_GUID = 'template'
     DEFAULT_AGENT_NAME   = 'Random' #HINT: Currently choose between {Random,Simple, Realistic}
     DEFAULT_MALMO_PATH   = 'C:/Local/malmo0.30/Malmo-0.30.0-Windows-64bit' # HINT: Change this to your own path
-    DEFAULT_AIMA_PATH    = 'C:/Users/2148704g/Downloads/aima-python_python_v27_r001/aima-python'  # HINT: Change this to your own path, forward slash only, should be the 2.7 version from https://www.dropbox.com/s/vulnv2pkbv8q92u/aima-python_python_v27_r001.zip?dl=0) or for Python 3.x get it from https://github.com/aimacode/aima-python
+    DEFAULT_AIMA_PATH    = 'H:/Workspace/AI/aima-python'  # HINT: Change this to your own path, forward slash only, should be the 2.7 version from https://www.dropbox.com/s/vulnv2pkbv8q92u/aima-python_python_v27_r001.zip?dl=0) or for Python 3.x get it from https://github.com/aimacode/aima-python
     DEFAULT_MISSION_TYPE = 'small'  #HINT: Choose between {small,medium,large}
     DEFAULT_MISSION_SEED_MAX = 1    #HINT: How many different instances of the given mission (i.e. maze layout)    
     DEFAULT_REPEATS      = 1        #HINT: How many repetitions of the same maze layout
