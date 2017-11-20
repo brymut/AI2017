@@ -326,6 +326,46 @@ class AgentRealistic:
         return actual_action   
   
     #----------------------------------------------------------------------------------------------------------------#
+    def vonNeumannNeighbors(self, pos, r):
+        """ Returns a list of the Von Neumann neighbors at radius r of a given positon """
+        neighbors = []
+        
+        r_dec = r
+        while r_dec > 0:
+            goal_pos_string = "%d:%d" % (pos[0] - r_dec, pos[1] + (r - r_dec))
+            neighbors.append(goal_pos_string)   
+            r_dec -= 1
+
+        r_dec = r
+        while r_dec > 0:
+            goal_pos_string = "%d:%d" % (pos[0] + (r - r_dec), pos[1] + r_dec)
+            neighbors.append(goal_pos_string) 
+            r_dec -= 1
+
+        r_dec = r
+        while r_dec > 0:
+            goal_pos_string = "%d:%d" % (pos[0] + r_dec, pos[1] - (r - r_dec))
+            neighbors.append(goal_pos_string) 
+            r_dec -= 1
+
+        r_dec = r
+        while r_dec > 0:
+            goal_pos_string = "%d:%d" % (pos[0] - (r - r_dec), pos[1] - r_dec )
+            neighbors.append(goal_pos_string) 
+            r_dec -= 1
+
+        return neighbors
+    #----------------------------------------------------------------------------------------------------------------#
+    def radialHeatMap(self, goal_pos, r):
+        """ Called when the goal is found. Creates a reward radius that diminishes with distance from the goal."""
+
+        for i in range(r):
+            radius = self.vonNeumannNeighbors(goal_pos, i+1)
+            reward_radius = (1.0/(i+1))*1000
+            for pos in radius:
+                if pos in self.q_table.keys():
+                    self.updateQTable(reward_radius, pos)
+    #----------------------------------------------------------------------------------------------------------------#
     def updateQTable( self, reward, current_state):
         """Change q_table to reflect what we have learnt."""
         gamma = 0.8
@@ -353,7 +393,7 @@ class AgentRealistic:
         
         # TODO: what should the new action value be?
         new_q = reward
-        
+        print reward
         # assign the new action value to the Q-table
         AgentRealistic.q_table[self.prev_s][self.prev_a] = new_q
 
@@ -374,6 +414,8 @@ class AgentRealistic:
         # update Q values
         if self.prev_s is not None and self.prev_a is not None:
             self.updateQTable( current_r, current_s)
+            
+
 
         self.drawQ( curr_x = int(obs[u'XPos']), curr_y = int(obs[u'ZPos']) )
 
@@ -482,6 +524,7 @@ class AgentRealistic:
         self.prev_a = None
         
         is_first_action = True
+        world_state_observations = []
         
         # main loop:
         world_state = agent_host.getWorldState()
@@ -492,7 +535,7 @@ class AgentRealistic:
             if is_first_action:
                 # wait until have received a valid observation
                 while True:
-                    #time.sleep(0.02)
+                    time.sleep(0.02)
                     world_state = agent_host.getWorldState()
                     for error in world_state.errors:
                         #self.logger.error("Error: %s" % error.text)
@@ -511,7 +554,7 @@ class AgentRealistic:
             else:
                 # wait for non-zero reward
                 while world_state.is_mission_running and current_r == 0:
-                    #time.sleep(0.02)
+                    time.sleep(0.02)
                     world_state = agent_host.getWorldState()
                     for error in world_state.errors:
                         #self.logger.error("Error: %s" % error.text)
@@ -522,7 +565,7 @@ class AgentRealistic:
                         self.solution_report.addReward(reward.getValue(), datetime.datetime.now())
                 # allow time to stabilise after action
                 while True:
-                    #time.sleep(0.02)
+                    time.sleep(0.02)
                     world_state = agent_host.getWorldState()
                     for error in world_state.errors:
                         #self.logger.error("Error: %s" % error.text)
@@ -533,6 +576,7 @@ class AgentRealistic:
                         self.solution_report.addReward(reward.getValue(), datetime.datetime.now())
                     if world_state.is_mission_running and len(world_state.observations)>0 and not world_state.observations[-1].text=="{}":
                         total_reward += self.act(world_state, agent_host, current_r)
+                        world_state_observations = world_state.observations
                         break
                     if not world_state.is_mission_running:
                         break
@@ -544,6 +588,12 @@ class AgentRealistic:
         # update Q values
         if self.prev_s is not None and self.prev_a is not None:
             self.updateQTableFromTerminatingState( current_r )
+            if current_r >= 1000:
+                print ("DRAWING THE HEAT MAP")
+                obs_text = world_state_observations[-1].text
+                obs = json.loads(obs_text) # most recent observation         
+                goal_pos = (  int(obs[u'XPos']), int(obs[u'ZPos'])  )                
+                self.radialHeatMap(goal_pos, 4)
             
         self.drawQ()
         print(AgentRealistic.q_table)
@@ -1071,8 +1121,8 @@ if __name__ == "__main__":
     #-- Define default arguments, in case you run the module as a script --#
     DEFAULT_STUDENT_GUID = 'template'
     DEFAULT_AGENT_NAME   = 'Random' #HINT: Currently choose between {Random,Simple, Realistic}
-    DEFAULT_MALMO_PATH   = 'C:/Local/malmo0.30/Malmo-0.30.0-Windows-64bit' # HINT: Change this to your own path
-    DEFAULT_AIMA_PATH    = 'H:/Workspace/AI/aima-python'  # HINT: Change this to your own path, forward slash only, should be the 2.7 version from https://www.dropbox.com/s/vulnv2pkbv8q92u/aima-python_python_v27_r001.zip?dl=0) or for Python 3.x get it from https://github.com/aimacode/aima-python
+    DEFAULT_MALMO_PATH   = '/home/kavi/Malmo' # HINT: Change this to your own path
+    DEFAULT_AIMA_PATH    = '/home/kavi/aima-python'  # HINT: Change this to your own path, forward slash only, should be the 2.7 version from https://www.dropbox.com/s/vulnv2pkbv8q92u/aima-python_python_v27_r001.zip?dl=0) or for Python 3.x get it from https://github.com/aimacode/aima-python
     DEFAULT_MISSION_TYPE = 'small'  #HINT: Choose between {small,medium,large}
     DEFAULT_MISSION_SEED_MAX = 1    #HINT: How many different instances of the given mission (i.e. maze layout)    
     DEFAULT_REPEATS      = 1        #HINT: How many repetitions of the same maze layout
@@ -1118,7 +1168,7 @@ if __name__ == "__main__":
     print("Working dir:"+os.getcwd())    
     print("Python version:"+sys.version)
     print("malmopath:"+args.malmopath)
-    print("JAVA_HOME:'"+os.environ["JAVA_HOME"]+"'")
+    #print("JAVA_HOME:'"+os.environ["JAVA_HOME"]+"'")
     print("MALMO_XSD_PATH:'"+os.environ["MALMO_XSD_PATH"]+"'")
         
     #-- Add the Malmo path  --#
