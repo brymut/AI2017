@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<MissionInit xmlns="http://ProjectMalmo.microsoft.com" PlatformVersion="0.31.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://ProjectMalmo.microsoft.com MissionInit.xsd">
+  <Mission>
+    <About>
+      <Summary>Mission for assessed exercise 2016/2017 University of Glasgow</Summary>
+    </About>
+    <ServerSection>
+      <ServerInitialConditions>
+        <Time>
+          <StartTime>6000</StartTime>
+          <AllowPassageOfTime>false</AllowPassageOfTime>
+        </Time>
+        <Weather>clear</Weather>
+        <AllowSpawning>false</AllowSpawning>
+      </ServerInitialConditions>
+      <ServerHandlers>
+        <FlatWorldGenerator destroyAfterUse="true" forceReset="true" generatorString="3;7,220*1,5*3,2;3;,biome_1" seed=""/>
+        <MazeDecorator>
+          <Seed>0</Seed>
+          <MaterialSeed>1</MaterialSeed>
+          <AllowDiagonalMovement>false</AllowDiagonalMovement>
+          <SizeAndPosition height="180" length="20" scale="1" width="20" xOrigin="0" yOrigin="215" zOrigin="0"/>
+          <StartBlock fixedToEdge="true" height="1" heightVariance="0" type="emerald_block"/>
+          <EndBlock fixedToEdge="false" height="12" heightVariance="0" type="redstone_block"/>
+          <PathBlock colour="WHITE ORANGE MAGENTA LIGHT_BLUE YELLOW LIME PINK GRAY SILVER CYAN PURPLE BLUE BROWN GREEN RED BLACK" height="1" heightVariance="0" type="glowstone"/>
+          <FloorBlock height="1" heightVariance="0" type="air"/>
+          <GapBlock colour="WHITE ORANGE MAGENTA LIGHT_BLUE YELLOW LIME PINK GRAY SILVER CYAN PURPLE BLUE BROWN GREEN RED BLACK" height="3" heightVariance="0" type="stained_hardened_clay"/>
+          <SubgoalBlock height="1" heightVariance="0" type="glowstone"/>
+          <Waypoints quantity="18">
+            <WaypointItem type="diamond_block"/>
+          </Waypoints>
+          <GapProbability variance="0.3">0.2</GapProbability>
+        </MazeDecorator>
+        <ServerQuitFromTimeUp description="out_of_time" timeLimitMs="240000"/>
+        <ServerQuitWhenAnyAgentFinishes description=""/>
+      </ServerHandlers>
+    </ServerSection>
+    <AgentSection mode="Creative">
+      <Name>My Agent</Name>
+      <AgentStart>
+        <Placement pitch="0" x="0" y="216" yaw="0" z="90"/>
+      </AgentStart>
+      <AgentHandlers>
+        <ObservationFromRecentCommands/>
+        <ObservationFromFullStats/>
+        <ObservationFromFullInventory flat="true"/>
+        <ObservationFromGrid>
+          <Grid absoluteCoords="false" name="grid">
+            <min x="-1" y="-1" z="-1"/>
+            <max x="1" y="-1" z="1"/>
+          </Grid>
+        </ObservationFromGrid>
+        <VideoProducer viewpoint="0" want_depth="true">
+          <Width>320</Width>
+          <Height>240</Height>
+        </VideoProducer>
+        <RewardForSendingCommand dimension="0" distribution="" reward="-6"/>
+        <RewardForCollectingItem dimension="0">
+          <Item distribution="" reward="18" type="diamond_block"/>
+        </RewardForCollectingItem>
+        <RewardForMissionEnd dimension="0" rewardForDeath="-1000000" rewardForDeathDistribution="">
+          <Reward description="found_goal" distribution="" reward="1377.069999999999936"/>
+          <Reward description="out_of_time" distribution="" reward="-728.200000000000045"/>
+        </RewardForMissionEnd>
+        <DiscreteMovementCommands autoFall="false" autoJump="false">
+          <ModifierList type="allow-list">
+            <command>turn</command>
+            <command>move</command>
+            <command>movenorth</command>
+            <command>moveeast</command>
+            <command>movesouth</command>
+            <command>movewest</command>
+            <command>look</command>
+          </ModifierList>
+        </DiscreteMovementCommands>
+        <AgentQuitFromTouchingBlockType>
+          <Block description="found_goal" type="redstone_block"/>
+        </AgentQuitFromTouchingBlockType>
+      </AgentHandlers>
+    </AgentSection>
+  </Mission>
+  <ExperimentUID/>
+  <ClientRole>0</ClientRole>
+  <ClientAgentConnection>
+    <ClientIPAddress>127.0.0.1</ClientIPAddress>
+    <ClientMissionControlPort>10000</ClientMissionControlPort>
+    <ClientCommandsPort>0</ClientCommandsPort>
+    <AgentIPAddress>127.0.0.1</AgentIPAddress>
+    <AgentMissionControlPort>10232</AgentMissionControlPort>
+    <AgentVideoPort>10668</AgentVideoPort>
+    <AgentDepthPort>0</AgentDepthPort>
+    <AgentLuminancePort>0</AgentLuminancePort>
+    <AgentObservationsPort>10570</AgentObservationsPort>
+    <AgentRewardsPort>10761</AgentRewardsPort>
+    <AgentColourMapPort>0</AgentColourMapPort>
+  </ClientAgentConnection>
+</MissionInit>

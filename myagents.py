@@ -295,6 +295,9 @@ class AgentRealistic:
     q_table = {}
     alpha = 1.0
     rep = 1
+    last_observation = None
+    last_action = None
+    has_placed_heatmap = False
     
     def __init__(self,agent_host,agent_port, mission_type, mission_seed, solution_report, state_space_graph):
         """ Constructor for the realistic agent """
@@ -325,6 +328,68 @@ class AgentRealistic:
         self.agent_host.sendCommand(actual_action) 
         return actual_action   
   
+    #----------------------------------------------------------------------------------------------------------------#
+
+    def vonNeumannNeighbors(self, pos, r):
+        """ Returns a list of the Von Neumann neighbors at radius r of a given positon """
+        neighbors = []
+        
+        r_dec = r
+        while r_dec > 0:
+            goal_pos_string = "%d:%d" % (pos[0] - r_dec, pos[1] + (r - r_dec))
+            neighbors.append(goal_pos_string)   
+            r_dec -= 1
+
+        r_dec = r
+        while r_dec > 0:
+            goal_pos_string = "%d:%d" % (pos[0] + (r - r_dec), pos[1] + r_dec)
+            neighbors.append(goal_pos_string) 
+            r_dec -= 1
+
+        r_dec = r
+        while r_dec > 0:
+            goal_pos_string = "%d:%d" % (pos[0] + r_dec, pos[1] - (r - r_dec))
+            neighbors.append(goal_pos_string) 
+            r_dec -= 1
+
+        r_dec = r
+        while r_dec > 0:
+            goal_pos_string = "%d:%d" % (pos[0] - (r - r_dec), pos[1] - r_dec )
+            neighbors.append(goal_pos_string) 
+            r_dec -= 1
+
+        return neighbors
+    #----------------------------------------------------------------------------------------------------------------#
+    def radialHeatMap(self, goal_pos, r):
+        """ Called when the goal is found. Creates a reward radius that diminishes with distance from the goal."""
+
+        for i in range(r):
+            radius = self.vonNeumannNeighbors(goal_pos, i+1)
+            reward_radius = (1.0/((i+1)**1.5))*25
+            for pos in radius:
+
+                pos_numeric = (int(pos.split(":")[0]), int(pos.split(":")[1]))
+                print (pos_numeric)
+                print (goal_pos)
+                
+                rewards = [0, 0, 0, 0]
+                if pos in self.q_table.keys():
+                    rewards = self.q_table[pos]
+                
+                if goal_pos[0] > pos_numeric[0]:
+                    rewards[3] = reward_radius
+
+                if goal_pos[1] < pos_numeric[1]:
+                    rewards[0] = reward_radius
+
+                if goal_pos[0] < pos_numeric[0]:
+                    rewards[2] = reward_radius
+
+                if goal_pos[1] > pos_numeric[1]:
+                    rewards[1] = reward_radius
+
+                self.q_table[pos] = rewards
+                print ("updated")
     #----------------------------------------------------------------------------------------------------------------#
     def updateQTable( self, reward, current_state):
         """Change q_table to reflect what we have learnt."""
@@ -400,6 +465,7 @@ class AgentRealistic:
         # try to send the selected action, only update prev_s if this succeeds
         try:
             self.__ExecuteActionForRealisticAgentWithNoisyTransitionModel__(a, 0.05)
+            AgentRealistic.last_action = a
             self.prev_s = current_s
             self.prev_a = a
 
@@ -481,7 +547,7 @@ class AgentRealistic:
         self.prev_s = None
         self.prev_a = None
         
-        is_first_action = True
+        is_first_action = True 
         
         # main loop:
         world_state = agent_host.getWorldState()
@@ -492,7 +558,7 @@ class AgentRealistic:
             if is_first_action:
                 # wait until have received a valid observation
                 while True:
-                    #time.sleep(0.02)
+                    time.sleep(0.02)
                     world_state = agent_host.getWorldState()
                     for error in world_state.errors:
                         #self.logger.error("Error: %s" % error.text)
@@ -511,7 +577,7 @@ class AgentRealistic:
             else:
                 # wait for non-zero reward
                 while world_state.is_mission_running and current_r == 0:
-                    #time.sleep(0.02)
+                    time.sleep(0.02)
                     world_state = agent_host.getWorldState()
                     for error in world_state.errors:
                         #self.logger.error("Error: %s" % error.text)
@@ -522,7 +588,7 @@ class AgentRealistic:
                         self.solution_report.addReward(reward.getValue(), datetime.datetime.now())
                 # allow time to stabilise after action
                 while True:
-                    #time.sleep(0.02)
+                    time.sleep(0.02)
                     world_state = agent_host.getWorldState()
                     for error in world_state.errors:
                         #self.logger.error("Error: %s" % error.text)
@@ -533,6 +599,7 @@ class AgentRealistic:
                         self.solution_report.addReward(reward.getValue(), datetime.datetime.now())
                     if world_state.is_mission_running and len(world_state.observations)>0 and not world_state.observations[-1].text=="{}":
                         total_reward += self.act(world_state, agent_host, current_r)
+                        AgentRealistic.last_observation = world_state.observations[-1]
                         break
                     if not world_state.is_mission_running:
                         break
@@ -545,6 +612,7 @@ class AgentRealistic:
         if self.prev_s is not None and self.prev_a is not None:
             self.updateQTableFromTerminatingState( current_r )
             
+                    
         self.drawQ()
         print(AgentRealistic.q_table)
 
@@ -1071,8 +1139,8 @@ if __name__ == "__main__":
     #-- Define default arguments, in case you run the module as a script --#
     DEFAULT_STUDENT_GUID = 'template'
     DEFAULT_AGENT_NAME   = 'Random' #HINT: Currently choose between {Random,Simple, Realistic}
-    DEFAULT_MALMO_PATH   = 'C:/Local/malmo0.30/Malmo-0.30.0-Windows-64bit' # HINT: Change this to your own path
-    DEFAULT_AIMA_PATH    = 'H:/Workspace/AI/aima-python'  # HINT: Change this to your own path, forward slash only, should be the 2.7 version from https://www.dropbox.com/s/vulnv2pkbv8q92u/aima-python_python_v27_r001.zip?dl=0) or for Python 3.x get it from https://github.com/aimacode/aima-python
+    DEFAULT_MALMO_PATH   = '/home/kavi/Malmo' # HINT: Change this to your own path
+    DEFAULT_AIMA_PATH    = '/home/kavi/aima-python'  # HINT: Change this to your own path, forward slash only, should be the 2.7 version from https://www.dropbox.com/s/vulnv2pkbv8q92u/aima-python_python_v27_r001.zip?dl=0) or for Python 3.x get it from https://github.com/aimacode/aima-python    
     DEFAULT_MISSION_TYPE = 'small'  #HINT: Choose between {small,medium,large}
     DEFAULT_MISSION_SEED_MAX = 1    #HINT: How many different instances of the given mission (i.e. maze layout)    
     DEFAULT_REPEATS      = 1        #HINT: How many repetitions of the same maze layout
@@ -1118,7 +1186,7 @@ if __name__ == "__main__":
     print("Working dir:"+os.getcwd())    
     print("Python version:"+sys.version)
     print("malmopath:"+args.malmopath)
-    print("JAVA_HOME:'"+os.environ["JAVA_HOME"]+"'")
+    #print("JAVA_HOME:'"+os.environ["JAVA_HOME"]+"'")
     print("MALMO_XSD_PATH:'"+os.environ["MALMO_XSD_PATH"]+"'")
         
     #-- Add the Malmo path  --#
@@ -1180,6 +1248,23 @@ if __name__ == "__main__":
             solution_report.start() # start the timer (may be overwritten in the agent to provide a fair comparison)            
             agent_to_be_evaluated.run_agent()                  
             solution_report.stop() # stop the timer
+
+            if agent_name == "AgentRealistic" and solution_report.is_goal and not AgentRealistic.has_placed_heatmap:
+                print ("DRAWING THE HEAT MAP")
+                obs_text = AgentRealistic.last_observation.text
+                obs = json.loads(obs_text) # most recent observation         
+                goal_pos = (  int(obs[u'XPos']), int(obs[u'ZPos'])  ) 
+
+                if AgentRealistic.last_action == 0:
+                   goal_pos = (goal_pos[0], goal_pos[1] + 1 )
+                if AgentRealistic.last_action == 1:
+                    goal_pos = (goal_pos[0], goal_pos[1] - 1 )
+                if AgentRealistic.last_action == 2:
+                    goal_pos = (goal_pos[0] -1, goal_pos[1])
+                if AgentRealistic.last_action == 3:
+                    goal_pos = (goal_pos[0] + 1, goal_pos[1] )
+                agent_to_be_evaluated.radialHeatMap(goal_pos, 7)
+                AgentRealistic.has_placed_heatmap = True
             
             print("\n---------------------------------------------")
             print("| Solution Report Summary: ")
