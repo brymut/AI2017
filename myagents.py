@@ -295,9 +295,11 @@ class AgentRealistic:
     q_table = {}
     alpha = 1.0
     rep = 1
+    heatmap_radius = 4
     last_observation = None
     last_action = None
     has_placed_heatmap = False
+    goal_pos = None
     
     def __init__(self,agent_host,agent_port, mission_type, mission_seed, solution_report, state_space_graph):
         """ Constructor for the realistic agent """
@@ -1237,6 +1239,13 @@ if __name__ == "__main__":
                 AgentRealistic.q_table = {}
                 AgentRealistic.alpha = 1.0
                 AgentRealistic.rep = args.nrepeats
+
+                if args.missiontype == "small":
+                    AgentRealistic.heatmap_radius = 4
+                elif args.missiontype == "medium" :
+                    AgentRealistic.heatmap_radius = 7
+                elif args.missiontype == "large" :
+                    AgentRealistic.heatmap_radius = 10
             helper_agent = None
             
         
@@ -1272,8 +1281,8 @@ if __name__ == "__main__":
                 if AgentRealistic.last_action == 2:
                     goal_pos = (goal_pos[0] -1, goal_pos[1])
                 if AgentRealistic.last_action == 3:
-                    goal_pos = (goal_pos[0] + 1, goal_pos[1] )
-                agent_to_be_evaluated.radialHeatMap(goal_pos, 7)
+                    goal_pos = (goal_pos[0] + 1, goal_pos[1] ) 
+                agent_to_be_evaluated.radialHeatMap(goal_pos, AgentRealistic.heatmap_radius)
                 AgentRealistic.has_placed_heatmap = True
             
             print("\n---------------------------------------------")
