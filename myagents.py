@@ -608,7 +608,8 @@ class AgentRealistic:
                         self.solution_report.addReward(reward.getValue(), datetime.datetime.now())
                     if world_state.is_mission_running and len(world_state.observations)>0 and not world_state.observations[-1].text=="{}":
                         total_reward += self.act(world_state, agent_host, current_r) 
-                        AgentRealistic.last_observation = world_state.observations[-1]
+                        if len(world_state.observations) >0:
+                            AgentRealistic.last_observation = world_state.observations[-1]
  
                         break
                     if not world_state.is_mission_running:
@@ -621,13 +622,6 @@ class AgentRealistic:
         # update Q values
         if self.prev_s is not None and self.prev_a is not None:
             self.updateQTableFromTerminatingState( current_r )
-            if current_r >= 1000:
-                print ("DRAWING THE HEAT MAP")
-                obs_text = world_state_observations[-1].text
-                obs = json.loads(obs_text) # most recent observation         
-                goal_pos = (  int(obs[u'XPos']), int(obs[u'ZPos'])  )                
-                self.radialHeatMap(goal_pos, 4)
-            
                     
         self.drawQ()
         print(AgentRealistic.q_table)
