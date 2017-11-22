@@ -300,7 +300,7 @@ class AgentRealistic:
     last_action = None
     has_placed_heatmap = False
     goal_pos = None
-    gibbs_temperature = 0
+    heatmap_enabled = False
     
     def __init__(self,agent_host,agent_port, mission_type, mission_seed, solution_report, state_space_graph):
         """ Constructor for the realistic agent """
@@ -637,7 +637,7 @@ class AgentRealistic:
         print("Mission has ended ... either because time has passed (-1000 reward) or goal reached (1000 reward) or early stop (0 reward)")
         print("Cumulative reward = " + str(total_reward) )
         print("Alpha: " + str(AgentRealistic.alpha)) 
-        #AgentRealistic.alpha = AgentRealistic.alpha - (1.0/args.nrepeats)
+        AgentRealistic.alpha = AgentRealistic.alpha - (1.0/args.nrepeats)
         print("Alpha: " + str(AgentRealistic.alpha))
         return
  
@@ -1149,6 +1149,14 @@ class AgentHelper:
 #-- The main entry point if you run the module as a script--#
 if __name__ == "__main__":     
 
+    def str2bool(v):
+        if v.lower() in ('yes', 'true', 't', 'y', '1'):
+            return True
+        elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+            return False
+        else:
+            raise argparse.ArgumentTypeError('Boolean value expected.')
+
     #-- Define default arguments, in case you run the module as a script --#
     DEFAULT_STUDENT_GUID = 'template'
     DEFAULT_AGENT_NAME   = 'Random' #HINT: Currently choose between {Random,Simple, Realistic}
@@ -1159,6 +1167,7 @@ if __name__ == "__main__":
     DEFAULT_REPEATS      = 1        #HINT: How many repetitions of the same maze layout
     DEFAULT_PORT         = 0
     DEFAULT_SAVE_PATH    = './results/'
+    DEFAULT_HEATMAP_ENABLED = False
 
     #-- Import required modules --#
     import os
@@ -1192,6 +1201,7 @@ if __name__ == "__main__":
     parser.add_argument("-x" , "--malmoport"        , type=int, help="special port for the Minecraft client", default=DEFAULT_PORT)
     parser.add_argument("-o" , "--aimapath"         , type=str, help="path for the aima toolbox (optional)"   , default=DEFAULT_AIMA_PATH)
     parser.add_argument("-r" , "--resultpath"       , type=str, help="the path where the results are saved" , default=DEFAULT_SAVE_PATH)
+    parser.add_argument("-m" , "--heatmapenabled"   , type=str2bool, help="enables the placement of a heatmap (boolean)" , default=DEFAULT_HEATMAP_ENABLED)
     args = parser.parse_args()        
     print args     
 
@@ -1238,8 +1248,13 @@ if __name__ == "__main__":
         else:
             if args.agentname.lower()=='realistic':
                 AgentRealistic.q_table = {}
-                AgentRealistic.alpha = 0.4
+                AgentRealistic.alpha = 1.0
                 AgentRealistic.rep = args.nrepeats
+
+                if args.heatmapenabled == True:
+                    AgentRealistic.heatmap_enabled = True
+                else:
+                    AgentRealistic.heatmap_enabled = False
 
                 if args.missiontype == "small":
                     AgentRealistic.heatmap_radius = 4
@@ -1249,7 +1264,9 @@ if __name__ == "__main__":
                     AgentRealistic.heatmap_radius = 10
             helper_agent = None
             
-        
+         
+        total_time = 0.0
+
         #-- Repeat the same instance (size and seed) multiple times --#
         for i_rep in range(0,args.nrepeats):                                   
             print('Setup the performance log...')
@@ -1269,7 +1286,7 @@ if __name__ == "__main__":
             agent_to_be_evaluated.run_agent()                  
             solution_report.stop() # stop the timer
 
-            if agent_name == "AgentRealistic" and solution_report.is_goal and not AgentRealistic.has_placed_heatmap:
+            if agent_name == "AgentRealistic" and AgentRealistic.heatmap_enabled==True and solution_report.is_goal and not AgentRealistic.has_placed_heatmap:
                 print ("DRAWING THE HEAT MAP")
                 obs_text = AgentRealistic.last_observation.text
                 obs = json.loads(obs_text) # most recent observation         
@@ -1309,7 +1326,10 @@ if __name__ == "__main__":
             #finput.close()
             
             print('Sleep a sec to make sure the client is ready for next mission/agent variation...')   
-            print("Run number:" + str(i_rep+1))         
+            print("Run number:" + str(i_rep+1))       
+            duration = (solution_report.end_datetime_wallclock-solution_report.start_datetime_wallclock).total_seconds()
+            total_time += duration
+            print("Avg time: " + str(total_time/(i_rep+1))  
             time.sleep(1)
             print("------------------------------------------------------------------------------\n")
 
