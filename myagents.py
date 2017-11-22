@@ -294,7 +294,6 @@ def init_mission(agent_host, port=0, agent_type='Unknown',mission_type='Unknown'
 class AgentRealistic:
     q_table = {}
     alpha = 1.0
-    rep = 1
     heatmap_radius = 4
     last_observation = None
     last_action = None
@@ -436,10 +435,7 @@ class AgentRealistic:
         
         obs_text = world_state.observations[-1].text
         obs = json.loads(obs_text) # most recent observation
-        #self.logger.debug(obs)
-        #if not u'XPos' in obs or not u'ZPos' in obs:
-            #self.logger.error("Incomplete observation received: %s" % obs_text)
-            #return 0
+
         current_s = "%d:%d" % (int(obs[u'XPos']), int(obs[u'ZPos']))
         print("State: %s (x = %.2f, z = %.2f)" % (current_s, float(obs[u'XPos']), float(obs[u'ZPos'])))
         if not AgentRealistic.q_table.has_key(current_s):
@@ -454,13 +450,8 @@ class AgentRealistic:
         self.drawQ( curr_x = int(obs[u'XPos']), curr_y = int(obs[u'ZPos']) )
 
         # select the next action
-        #rnd = random.random()
-        #if rnd < self.epsilon:
-            #a = random.randint(0, len(self.actions) - 1)
-            #self.logger.info("Random action: %s" % self.actions[a])
-        #else:
+        
         m = max(AgentRealistic.q_table[current_s])
-        #self.logger.debug("Current values: %s" % ",".join(str(x) for x in self.q_table[current_s]))
         print("Current values: %s" % ",".join(str(x) for x in AgentRealistic.q_table[current_s]))
         l = list()
         for x in range(0, len(self.AGENT_ALLOWED_ACTIONS)):
@@ -468,22 +459,20 @@ class AgentRealistic:
                 l.append(x)
         y = random.randint(0, len(l)-1)
         a = l[y]
-        print(a)
-        #self.logger.info("Taking q action: %s" % self.actions[a])
         print("Taking q action: %s" % self.AGENT_ALLOWED_ACTIONS[a])
-        self.solution_report.addAction()
 
 
 
         # try to send the selected action, only update prev_s if this succeeds
         try:
-            self.__ExecuteActionForRealisticAgentWithNoisyTransitionModel__(a, 0.05)
+            action = self.__ExecuteActionForRealisticAgentWithNoisyTransitionModel__(a, 0.05)
+            self.solution_report.addAction()
+            a = self.AGENT_ALLOWED_ACTIONS.index(action)
             AgentRealistic.last_action = a
             self.prev_s = current_s
             self.prev_a = a
 
         except RuntimeError as e:
-            #self.logger.error("Failed to send command: %s" % e)
             print "Failed to send command:",e
             pass 
             
@@ -575,7 +564,6 @@ class AgentRealistic:
                     time.sleep(0.02)
                     world_state = agent_host.getWorldState()
                     for error in world_state.errors:
-                        #self.logger.error("Error: %s" % error.text)
                         print("Error: %s" % error.text)
                     for reward in world_state.rewards:
                         print "Reward_t:",reward.getValue()
@@ -594,7 +582,6 @@ class AgentRealistic:
                     time.sleep(0.02)
                     world_state = agent_host.getWorldState()
                     for error in world_state.errors:
-                        #self.logger.error("Error: %s" % error.text)
                         print("Error: %s" % error.text)
                     for reward in world_state.rewards:
                         print "Reward_t:",reward.getValue()
@@ -605,7 +592,6 @@ class AgentRealistic:
                     time.sleep(0.02)
                     world_state = agent_host.getWorldState()
                     for error in world_state.errors:
-                        #self.logger.error("Error: %s" % error.text)
                         print("Error: %s" % error.text)
                     for reward in world_state.rewards:
                         print "Reward_t:",reward.getValue()
@@ -621,7 +607,6 @@ class AgentRealistic:
                         break
 
         # process final reward
-        #self.logger.debug("Final reward: %d" % current_r)
         total_reward += current_r
 
         # update Q values
@@ -629,16 +614,15 @@ class AgentRealistic:
             self.updateQTableFromTerminatingState( current_r )
                     
         self.drawQ()
-        print(AgentRealistic.q_table)
 
         # --------------------------------------------------------------------------------------------       
         # Summary
         print("\n\nSummary:")
         print("Mission has ended ... either because time has passed (-1000 reward) or goal reached (1000 reward) or early stop (0 reward)")
         print("Cumulative reward = " + str(total_reward) )
-        print("Alpha: " + str(AgentRealistic.alpha)) 
+ 
         AgentRealistic.alpha = AgentRealistic.alpha - (1.0/args.nrepeats)
-        print("Alpha: " + str(AgentRealistic.alpha))
+ 
         return
  
 
@@ -722,17 +706,6 @@ class AgentSimple:
         maze_map.locations = self.state_space.state_locations
         maze_map_locations = maze_map.locations
         
-        #creating graph object
-        '''G = nx.Graph()
-        for n, p in maze_map_locations.items():
-            G.add_node(n)    
-        
-        for node in maze_map.nodes():
-            connections = maze_map.get(node)
-            for connection in connections.keys():        
-                G.add_edge(node, connection) # add edges to the graph 
-        print("Done creating the graph object")
-	'''
         
         maze_problem = GraphProblem(self.state_space.start_id, self.state_space.goal_id, maze_map)
         print("Initial state:"+maze_problem.initial)
@@ -1160,8 +1133,8 @@ if __name__ == "__main__":
     #-- Define default arguments, in case you run the module as a script --#
     DEFAULT_STUDENT_GUID = 'template'
     DEFAULT_AGENT_NAME   = 'Random' #HINT: Currently choose between {Random,Simple, Realistic}
-    DEFAULT_MALMO_PATH   = '/home/kavi/Malmo' # HINT: Change this to your own path 
-    DEFAULT_AIMA_PATH    = '/home/kavi/aima-python'  # HINT: Change this to your own path, forward slash only, should be the 2.7 version from https://www.dropbox.com/s/vulnv2pkbv8q92u/aima-python_python_v27_r001.zip?dl=0) or for Python 3.x get it from https://github.com/aimacode/aima-python    
+    DEFAULT_MALMO_PATH   = 'C:/Local/malmo0.30/Malmo-0.30.0-Windows-64bit' # HINT: Change this to your own path 
+    DEFAULT_AIMA_PATH    = 'H:/aima-python'  # HINT: Change this to your own path, forward slash only, should be the 2.7 version from https://www.dropbox.com/s/vulnv2pkbv8q92u/aima-python_python_v27_r001.zip?dl=0) or for Python 3.x get it from https://github.com/aimacode/aima-python    
     DEFAULT_MISSION_TYPE = 'small'  #HINT: Choose between {small,medium,large}
     DEFAULT_MISSION_SEED_MAX = 1    #HINT: How many different instances of the given mission (i.e. maze layout)    
     DEFAULT_REPEATS      = 1        #HINT: How many repetitions of the same maze layout
@@ -1209,7 +1182,7 @@ if __name__ == "__main__":
     print("Working dir:"+os.getcwd())    
     print("Python version:"+sys.version)
     print("malmopath:"+args.malmopath)
-    #print("JAVA_HOME:'"+os.environ["JAVA_HOME"]+"'")
+    print("JAVA_HOME:'"+os.environ["JAVA_HOME"]+"'")
     print("MALMO_XSD_PATH:'"+os.environ["MALMO_XSD_PATH"]+"'")
         
     #-- Add the Malmo path  --#
@@ -1250,6 +1223,7 @@ if __name__ == "__main__":
                 AgentRealistic.q_table = {}
                 AgentRealistic.alpha = 1.0
                 AgentRealistic.rep = args.nrepeats
+
 
                 if args.heatmapenabled == True:
                     AgentRealistic.heatmap_enabled = True
