@@ -300,6 +300,7 @@ class AgentRealistic:
     last_action = None
     has_placed_heatmap = False
     goal_pos = None
+    gibbs_temperature = 0
     
     def __init__(self,agent_host,agent_port, mission_type, mission_seed, solution_report, state_space_graph):
         """ Constructor for the realistic agent """
@@ -375,7 +376,7 @@ class AgentRealistic:
                 print (pos_numeric)
                 print (goal_pos)
                 
-                rewards = [0, 0, 0, 0]
+                rewards = [-10, -10, -10, -10]
                 if pos in self.q_table.keys():
                     rewards = self.q_table[pos]
                 
@@ -471,6 +472,8 @@ class AgentRealistic:
         #self.logger.info("Taking q action: %s" % self.actions[a])
         print("Taking q action: %s" % self.AGENT_ALLOWED_ACTIONS[a])
         self.solution_report.addAction()
+
+
 
         # try to send the selected action, only update prev_s if this succeeds
         try:
@@ -634,7 +637,7 @@ class AgentRealistic:
         print("Mission has ended ... either because time has passed (-1000 reward) or goal reached (1000 reward) or early stop (0 reward)")
         print("Cumulative reward = " + str(total_reward) )
         print("Alpha: " + str(AgentRealistic.alpha)) 
-        AgentRealistic.alpha = AgentRealistic.alpha - (1.0/args.nrepeats)
+        #AgentRealistic.alpha = AgentRealistic.alpha - (1.0/args.nrepeats)
         print("Alpha: " + str(AgentRealistic.alpha))
         return
  
@@ -747,9 +750,7 @@ class AgentSimple:
         print("----------------------------------------")
         print("Identified goal state:"+str(solution_path[0]))
         print("----------------------------------------")
-        print("Solution trace:"+str(solution_path))
-        ExecuteAction
-        
+        print("Solution trace:"+str(solution_path))        
         solution_path_local = deepcopy(solution_path)
         print(solution_path_local)
         
@@ -826,7 +827,7 @@ class AgentSimple:
                 print "Error:",error.text
 
             # Handle the percepts    
-            xpos = NoneExecuteAction
+            xpos = None
             ypos = None
             zpos = None
             yaw  = None
@@ -1237,7 +1238,7 @@ if __name__ == "__main__":
         else:
             if args.agentname.lower()=='realistic':
                 AgentRealistic.q_table = {}
-                AgentRealistic.alpha = 1.0
+                AgentRealistic.alpha = 0.4
                 AgentRealistic.rep = args.nrepeats
 
                 if args.missiontype == "small":
@@ -1284,6 +1285,7 @@ if __name__ == "__main__":
                     goal_pos = (goal_pos[0] + 1, goal_pos[1] ) 
                 agent_to_be_evaluated.radialHeatMap(goal_pos, AgentRealistic.heatmap_radius)
                 AgentRealistic.has_placed_heatmap = True
+                AgentRealistic.goal_pos = goal_pos
             
             print("\n---------------------------------------------")
             print("| Solution Report Summary: ")
@@ -1306,7 +1308,8 @@ if __name__ == "__main__":
             #res =  pickle.load(finput)
             #finput.close()
             
-            print('Sleep a sec to make sure the client is ready for next mission/agent variation...')            
+            print('Sleep a sec to make sure the client is ready for next mission/agent variation...')   
+            print("Run number:" + str(i_rep+1))         
             time.sleep(1)
             print("------------------------------------------------------------------------------\n")
 
