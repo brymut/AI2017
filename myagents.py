@@ -1133,8 +1133,10 @@ if __name__ == "__main__":
     #-- Define default arguments, in case you run the module as a script --#
     DEFAULT_STUDENT_GUID = 'template'
     DEFAULT_AGENT_NAME   = 'Random' #HINT: Currently choose between {Random,Simple, Realistic}
-    DEFAULT_MALMO_PATH   = 'C:/Local/malmo0.30/Malmo-0.30.0-Windows-64bit' # HINT: Change this to your own path 
-    DEFAULT_AIMA_PATH    = 'H:/aima-python'  # HINT: Change this to your own path, forward slash only, should be the 2.7 version from https://www.dropbox.com/s/vulnv2pkbv8q92u/aima-python_python_v27_r001.zip?dl=0) or for Python 3.x get it from https://github.com/aimacode/aima-python    
+    DEFAULT_MALMO_PATH   = '/home/kavi/Malmo' # HINT: Change this to your own path
+    DEFAULT_AIMA_PATH    = '/home/kavi/aima-python'
+    # DEFAULT_MALMO_PATH   = 'C:/Local/malmo0.30/Malmo-0.30.0-Windows-64bit' # HINT: Change this to your own path 
+    # DEFAULT_AIMA_PATH    = 'H:/aima-python'  # HINT: Change this to your own path, forward slash only, should be the 2.7 version from https://www.dropbox.com/s/vulnv2pkbv8q92u/aima-python_python_v27_r001.zip?dl=0) or for Python 3.x get it from https://github.com/aimacode/aima-python    
     DEFAULT_MISSION_TYPE = 'small'  #HINT: Choose between {small,medium,large}
     DEFAULT_MISSION_SEED_MAX = 1    #HINT: How many different instances of the given mission (i.e. maze layout)    
     DEFAULT_REPEATS      = 1        #HINT: How many repetitions of the same maze layout
@@ -1182,7 +1184,7 @@ if __name__ == "__main__":
     print("Working dir:"+os.getcwd())    
     print("Python version:"+sys.version)
     print("malmopath:"+args.malmopath)
-    print("JAVA_HOME:'"+os.environ["JAVA_HOME"]+"'")
+    #print("JAVA_HOME:'"+os.environ["JAVA_HOME"]+"'")
     print("MALMO_XSD_PATH:'"+os.environ["MALMO_XSD_PATH"]+"'")
         
     #-- Add the Malmo path  --#
@@ -1303,7 +1305,7 @@ if __name__ == "__main__":
             print("Run number:" + str(i_rep+1))       
             duration = (solution_report.end_datetime_wallclock-solution_report.start_datetime_wallclock).total_seconds()
             total_time += duration
-            print("Avg time: " + str(total_time/(i_rep+1))  
+            print("Avg time: " + str(total_time/(i_rep+1)))  
             time.sleep(1)
             print("------------------------------------------------------------------------------\n")
 
